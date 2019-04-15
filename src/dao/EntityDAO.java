@@ -19,7 +19,7 @@ public abstract class EntityDAO<E, K> {
 
     public abstract List<E> getAll();
 
-    public abstract E update(E entity);
+    public abstract boolean update(E entity);
 
     public abstract E getEntityById(K id);
 

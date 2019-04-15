@@ -1,14 +1,15 @@
 package starter;
 
 import config.Const;
+import dao.RoomsDAO;
 import dao.UserDAO;
+import model.Room;
 import model.User;
 
 import java.lang.String;
 import java.io.*;
 import java.net.*;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -56,6 +57,7 @@ public class Start extends Thread {
     class ClientThread extends Thread {
         Socket clientSocket;
         UserDAO userDAO = new UserDAO();
+        RoomsDAO roomsDAO = new RoomsDAO();
         ObjectInputStream input = null;
         ObjectOutputStream output = null;
 
@@ -72,7 +74,7 @@ public class Start extends Thread {
         @Override
         public void run() {
 
-            while (true) {
+            while (clientSocket.isConnected()) {
                 try {
                     String clientMessage = (String)input.readObject();
                     System.out.println(clientMessage);
@@ -81,26 +83,26 @@ public class Start extends Thread {
                     String command = message[1];
 
                     switch (commandNumberStr){
+                        case "usersTable":
+                            post(userDAO.getAll());
+                            break;
                         case "logIn": {
                             String[] values = command.split(" ", 2);
-
                             List<User> users = userDAO.getAll();
-
-                            for (User user : users){
-                                if(user.getLogin().equals(values[0]) && user.getPassword().equals(values[1])){
-                                    post(user);
-                                } else {
-                                    post(null);
+                            User user = null;
+                            for (User temp : users){
+                                if(temp.getLogin().equals(values[0]) && temp.getPassword().equals(values[1])){
+                                    user = temp;
+                                    break;
                                 }
                             }
+                            post(user);
                             break;
                         }
 
                         case "sighUp": {
                             String[] valuesSighUp = command.split(" ", 3);
-
                             List<User> users = userDAO.getAll();
-
                             for(User user : users){
                                 if(user.getLogin().equals(valuesSighUp[1])){
                                     post(null);
@@ -112,7 +114,7 @@ public class Start extends Thread {
                             user.setName(valuesSighUp[0]);
                             user.setLogin(valuesSighUp[1]);
                             user.setPassword(valuesSighUp[2]);
-                            user.setRole(1);
+                            user.setRole("user");
 
                             userDAO.create(user);
 
@@ -126,12 +128,32 @@ public class Start extends Thread {
                             }
                         }
 
+                        case "addUser":
+                            String[] valuesSighUp = command.split(" ", 5);
+                            User user = null;
+                            Boolean test = null;
 
-                        case "clientsTable": {
-                            //post(dao.getAllUsers());
+                            if(valuesSighUp[0].equals("null")){
+                                user = new User(0, valuesSighUp[1], valuesSighUp[2], valuesSighUp[3], valuesSighUp[4]);
+                                test = userDAO.create(user);
+                            }else{
+                                user = new User(Integer.parseInt(valuesSighUp[0]), valuesSighUp[1], valuesSighUp[2], valuesSighUp[3], valuesSighUp[4]);
+                                test = userDAO.update(user);
+                            }
+
+                            post(test);
+                            break;
+
+                        case "getHostelNumber": {
+                            valuesSighUp = command.split(" ", 2);
+
+                            post(roomsDAO.getAll());
                             break;
                         }
 
+                        case "deleteUser":{
+                            post(userDAO.delete(Integer.parseInt(command)));
+                        }
 
                         case "discountsTable": {
                             //post(dao.getAllUsers());
